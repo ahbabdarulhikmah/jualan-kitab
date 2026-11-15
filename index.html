@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Jualan Kitab Darul Hikmah</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Jualan Kitab Darul Hikmah</title>
+<base target="_top">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+[hidden]{display:none!important}
+html{color-scheme:light}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+/* Layout: one ledger column — month bar, monthly summary strip, tabs (Order / Kitab & Stok), entry form + table per tab */
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --ink:#18221d; --muted:#5f6d66; --line:#dbe2dc;
+  --accent:#1f6f4f; --accent-ink:#ffffff; --neg:#b4402a; --warn:#9a6a12; --soft:#e7efe9;
+  --f-display:"Sora",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111613; --surface:#18201b; --ink:#e6ece8; --muted:#93a39a; --line:#2b3630;
+  --accent:#4fbf8d; --accent-ink:#0d1a13; --neg:#ef8a72; --warn:#e2b45a; --soft:#1e2a23; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --surface:#18201b; --ink:#e6ece8; --muted:#93a39a; --line:#2b3630;
+  --accent:#4fbf8d; --accent-ink:#0d1a13; --neg:#ef8a72; --warn:#e2b45a; --soft:#1e2a23; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:960px;margin:0 auto;padding-block:28px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:700;font-size:1.5rem;margin:0;letter-spacing:-.01em}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.titleblock{display:flex;flex-direction:column;gap:4px}
+.sync{font-size:.78rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.sync.on::before{background:var(--accent)}
+.sync.off{color:var(--neg)} .sync.off::before{background:var(--neg)}
+.monthbar{display:flex;align-items:center;gap:6px}
+.monthbar .label{font-family:var(--f-display);font-weight:600;font-size:1.05rem;min-width:9.5em;text-align:center}
+button{font:inherit;cursor:pointer}
+.icon-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:1.1rem;line-height:1}
+.icon-btn:hover{border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.summary>div{padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.summary>div+div{border-left:1px solid var(--line)}
+.lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.big{font-family:var(--f-mono);font-size:1.3rem;font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.big.pos{color:var(--accent)}
+.sub{font-size:.8rem;color:var(--muted)} .sub.warn{color:var(--warn)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tab{border:none;background:none;color:var(--muted);padding:10px 14px;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel{display:flex;flex-direction:column;gap:18px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+h2{font-family:var(--f-display);font-weight:600;font-size:1rem;margin:0 0 12px}
+.form{display:grid;gap:10px;align-items:end}
+#orderForm{grid-template-columns:130px 120px 1.6fr 80px 110px 1fr auto}
+#stockForm{grid-template-columns:130px 1.6fr 90px 1.4fr auto}
+#bookForm{grid-template-columns:1.6fr 110px 100px auto}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:.75rem;color:var(--muted);font-weight:500}
+.field input,.field select{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-width:0;width:100%}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+.num{font-family:var(--f-mono);text-align:right}
+.primary{background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:10px 18px;font-weight:600}
+.primary:hover{filter:brightness(1.08)}
+.hint{font-size:.82rem;color:var(--muted);margin:8px 0 0}
+.err{color:var(--neg);font-size:.85rem;margin:8px 0 0}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+#orderTable{min-width:700px} #bookTable{min-width:800px} #stockTable{min-width:520px}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.date{font-family:var(--f-mono);color:var(--muted);white-space:nowrap;font-size:.88rem}
+td.muted{color:var(--muted);font-size:.9rem;overflow-wrap:anywhere}
+tfoot td{font-weight:600;border-bottom:none;background:var(--soft)}
+.chip{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.chip.ok{color:var(--accent)} .chip.low{color:var(--warn)} .chip.out{color:var(--neg)}
+.neg{color:var(--neg)}
+.cell-in{font-family:var(--f-mono);text-align:right;width:90px;padding:6px 8px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink);font-size:.9rem}
+.cell-in:hover{border-color:var(--line)} .cell-in:focus{outline:none;border-color:var(--accent);background:var(--bg)}
+.del{border:none;background:none;color:var(--muted);font-size:.95rem;padding:2px 6px;border-radius:6px;white-space:nowrap}
+.del:hover{color:var(--neg);background:var(--soft)}
+.ro .del,.ro .writer{display:none}
+.empty{padding:24px 10px;text-align:center;color:var(--muted)}
+.status{font-size:.8rem;color:var(--muted)}
+.signin{border-color:var(--warn)}
+.rank-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.rank-head h2{margin:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:none;background:var(--surface);color:var(--muted);padding:6px 12px;font-size:.85rem;font-weight:600}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+#rankTable{min-width:600px}
+.barcol{width:32%}
+.bar{height:10px;background:var(--soft);border-radius:999px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--accent);border-radius:999px;opacity:.55}
+tr.podium .bar span{opacity:1}
+tr.podium td:nth-child(2){font-weight:600}
+td.rk{color:var(--muted);width:36px}
+tr.podium td.rk{color:var(--accent);font-weight:600}
+.up{color:var(--accent)} .down{color:var(--neg)}
+.rep-lead{margin:0 0 16px;max-width:70ch}
+.rep-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.rep-block{border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0;background:var(--bg)}
+.rep-wide{grid-column:1/-1}
+.rep-block h3{font-family:var(--f-display);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px;font-weight:600}
+.rep-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;overflow-wrap:anywhere}
+ul.rep-list{list-style:none;padding-left:0}
+.rep-num{color:var(--muted);font-family:var(--f-mono);font-size:.82rem;display:block}
+.rep-sugg li{padding-left:18px;position:relative}
+.rep-sugg li::before{content:"→";position:absolute;left:0;color:var(--accent);font-weight:700}
+.muted{color:var(--muted)}
+@media (max-width:760px){.rep-grid{grid-template-columns:1fr}}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:10px;font-size:.9rem;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:50;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:760px){
+  .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .summary>div:nth-child(3){border-left:none}
+  .summary>div:nth-child(n+3){border-top:1px solid var(--line)}
+  #orderForm,#stockForm,#bookForm{grid-template-columns:1fr 1fr}
+  .form .wide{grid-column:1/-1}
+  .form .primary{grid-column:1/-1}
+}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="titleblock"><h1>Jualan Kitab Darul Hikmah</h1><span class="sync" id="sync">Menyambung…</span></div>
+    <div class="monthbar">
+      <button class="icon-btn" id="prev" aria-label="Bulan sebelum">‹</button>
+      <div class="label" id="monthLabel">—</div>
+      <button class="icon-btn" id="next" aria-label="Bulan seterusnya">›</button>
+    </div>
+  </div>
+
+  <section class="summary" aria-label="Ringkasan bulan">
+    <div><span class="lbl">Hasil jualan</span><span class="big pos" id="sRev">RM 0.00</span><span class="sub" id="sRevSub">bulan ini</span></div>
+    <div><span class="lbl">Kitab terjual</span><span class="big" id="sUnits">0</span><span class="sub">unit bulan ini</span></div>
+    <div><span class="lbl">Bilangan order</span><span class="big" id="sOrders">0</span><span class="sub" id="sChan">—</span></div>
+    <div><span class="lbl">Stok semasa</span><span class="big" id="sStock">0</span><span class="sub" id="sLow">unit</span></div>
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabOrder" aria-selected="true" aria-controls="pOrder">Order</button>
+    <button class="tab" role="tab" id="tabBook" aria-selected="false" aria-controls="pBook">Kitab &amp; Stok</button>
+    <button class="tab" role="tab" id="tabRank" aria-selected="false" aria-controls="pRank">Ranking</button>
+    <button class="tab" role="tab" id="tabReport" aria-selected="false" aria-controls="pReport">Report</button>
+  </div>
+
+  <!-- ORDER -->
+  <div class="panel" id="pOrder" role="tabpanel">
+    <section class="card writer">
+      <h2>Order masuk</h2>
+      <form class="form" id="orderForm" novalidate>
+        <div class="field"><label for="oDate">Tarikh</label><input type="date" id="oDate"></div>
+        <div class="field"><label for="oChan">Saluran</label><select id="oChan"><option>Shopee</option><option>Offline</option></select></div>
+        <div class="field wide"><label for="oBook">Kitab</label><select id="oBook"></select></div>
+        <div class="field"><label for="oQty">Kuantiti</label><input id="oQty" class="num" inputmode="numeric" value="1"></div>
+        <div class="field"><label for="oPrice">Harga seunit</label><input id="oPrice" class="num" inputmode="decimal" placeholder="0.00"></div>
+        <div class="field wide"><label for="oNo">No. order / catatan</label><input id="oNo" placeholder="Pilihan"></div>
+        <button class="primary" type="submit">Tambah</button>
+      </form>
+      <p class="hint">Harga diisi automatik ikut kitab. Satu order ada 2 jenis kitab? Masukkan 2 kali dengan No. order yang sama.</p>
+      <p class="err" id="oErr" hidden></p>
+    </section>
+    <section class="card">
+      <h2>Senarai order bulan ini</h2>
+      <div class="table-wrap">
+        <table id="orderTable">
+          <thead><tr><th>Tarikh</th><th>Saluran</th><th>Kitab</th><th class="n">Kuantiti</th><th class="n">Harga</th><th class="n">Jumlah</th><th>No. order / catatan</th><th>Oleh</th><th></th></tr></thead>
+          <tbody id="orderRows"></tbody>
+          <tfoot id="orderFoot"></tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- REPORT -->
+  <div class="panel" id="pReport" role="tabpanel" hidden>
+    <section class="card report">
+      <h2 id="repTitle">Report bulanan</h2>
+      <p class="rep-lead" id="repLead"></p>
+      <div class="rep-grid">
+        <div class="rep-block"><h3>Top sales</h3><ol class="rep-list" id="repTop"></ol></div>
+        <div class="rep-block"><h3>Stok habis &amp; rendah</h3><ul class="rep-list" id="repOut"></ul></div>
+        <div class="rep-block"><h3>Stok diperbaharui</h3><ul class="rep-list" id="repIn"></ul></div>
+        <div class="rep-block rep-wide"><h3>Cadangan tambah baik</h3><ul class="rep-list rep-sugg" id="repSugg"></ul></div>
+      </div>
+      <p class="hint">Report dijana automatik daripada order dan stok masuk bulan ini. Stok dikira setakat hujung bulan.</p>
+    </section>
+  </div>
+
+  <!-- RANKING -->
+  <div class="panel" id="pRank" role="tabpanel" hidden>
+    <section class="card">
+      <div class="rank-head">
+        <h2 id="rankTitle">Ranking jualan</h2>
+        <div class="seg" role="group" aria-label="Susun ikut">
+          <button type="button" id="rkUnit" aria-pressed="true">Unit</button>
+          <button type="button" id="rkRev" aria-pressed="false">Hasil RM</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="rankTable">
+          <thead><tr><th class="n">#</th><th>Kitab</th><th class="barcol"></th><th class="n">Unit</th><th class="n">Hasil (RM)</th><th class="n">% hasil</th><th class="n">Bulan lepas</th></tr></thead>
+          <tbody id="rankRows"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="rankZero"></p>
+    </section>
+  </div>
+
+  <!-- KITAB & STOK -->
+  <div class="panel" id="pBook" role="tabpanel" hidden>
+    <section class="card">
+      <h2>Kitab <span class="muted" style="font-weight:500;font-size:.85rem">· disusun ikut stok terbanyak</span></h2>
+      <div class="table-wrap">
+        <table id="bookTable">
+          <thead><tr><th class="n">#</th><th>Kitab</th><th class="n">Harga (RM)</th><th class="n">Stok awal</th><th class="n">Stok masuk</th><th class="n">Terjual</th><th class="n">Stok semasa</th><th class="n">Jualan bulan ini</th><th>Status</th></tr></thead>
+          <tbody id="bookRows"></tbody>
+          <tfoot id="bookFoot"></tfoot>
+        </table>
+      </div>
+      <p class="hint writer">Klik pada harga atau stok awal untuk ubah. Stok semasa = stok awal + stok masuk − terjual. Stok rendah bila 5 unit atau kurang.</p>
+    </section>
+
+    <section class="card writer">
+      <h2>Stok masuk</h2>
+      <form class="form" id="stockForm" novalidate>
+        <div class="field"><label for="kDate">Tarikh</label><input type="date" id="kDate"></div>
+        <div class="field wide"><label for="kBook">Kitab</label><select id="kBook"></select></div>
+        <div class="field"><label for="kQty">Kuantiti</label><input id="kQty" class="num" inputmode="numeric" placeholder="0"></div>
+        <div class="field wide"><label for="kNote">Catatan</label><input id="kNote" placeholder="cth. Dari pembekal"></div>
+        <button class="primary" type="submit">Tambah stok</button>
+      </form>
+      <p class="err" id="kErr" hidden></p>
+      <div class="table-wrap" style="margin-top:14px">
+        <table id="stockTable">
+          <thead><tr><th>Tarikh</th><th>Kitab</th><th class="n">Kuantiti</th><th>Catatan</th><th>Oleh</th><th></th></tr></thead>
+          <tbody id="stockRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card writer">
+      <h2>Tambah kitab baru</h2>
+      <form class="form" id="bookForm" novalidate>
+        <div class="field wide"><label for="bName">Nama kitab</label><input id="bName" placeholder="cth. Safinatun Najah"></div>
+        <div class="field"><label for="bPrice">Harga (RM)</label><input id="bPrice" class="num" inputmode="decimal" placeholder="0.00"></div>
+        <div class="field"><label for="bStock">Stok awal</label><input id="bStock" class="num" inputmode="numeric" placeholder="0"></div>
+        <button class="primary" type="submit">Tambah kitab</button>
+      </form>
+      <p class="err" id="bErr" hidden></p>
+    </section>
+  </div>
+  <p class="status" id="status"></p>
+</div>
+
+<div id="pinDlg" hidden>
+  <form id="pinForm" class="pin-card" novalidate>
+    <h2>Masukkan PIN</h2>
+    <p class="hint" style="margin:0 0 10px">PIN diperlukan untuk simpan perubahan. Ia diingat dalam pelayar ini.</p>
+    <div class="field"><label for="pinIn">PIN</label><input id="pinIn" type="password" inputmode="numeric" autocomplete="current-password"></div>
+    <p class="err" id="pinErr" hidden></p>
+    <div class="pin-actions"><button type="button" class="ghost" id="pinCancel">Batal</button><button type="submit" class="primary">Teruskan</button></div>
+  </form>
+</div>
+<style>
+#pinDlg{position:fixed;inset:0;background:rgba(10,20,15,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.pin-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:8px}
+.pin-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+.ghost{background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px 16px;font-weight:600}
+</style>
+<script>
+(function(){
+  var LS={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}},del:function(k){try{localStorage.removeItem(k)}catch(e){}}};
+  var cache={kitab:[],order:[],stokmasuk:[]},subs={kitab:[],order:[],stokmasuk:[]},last={},first=null,timer=null;
+  var API_URL='https://script.google.com/macros/s/AKfycbw3sVMP_QGzk1bu3QKVrsGetHir4G05uyOTN4b1tomTSpVvY7qAzT5FtoVAtvdAMhdV/exec';
+  function run(fn){var a=[].slice.call(arguments,1);return fetch(API_URL,{method:'POST',credentials:'omit',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:a})}).then(function(r){return r.json()}).then(function(j){if(!j||!j.ok)throw new Error((j&&j.error)||'Ralat pelayan');return j.result})}
+  function mk(c){return{docs:cache[c].map(function(d){return{id:d.id,exists:true,data:function(){return d}}}),size:cache[c].length,empty:!cache[c].length,docChanges:function(){return[]},metadata:{fromCache:false,hasPendingWrites:false}}}
+  function refresh(){return run('getAll').then(function(all){Object.keys(subs).forEach(function(c){var j=JSON.stringify(all[c]||[]);if(j!==last[c]){last[c]=j;cache[c]=all[c]||[];subs[c].forEach(function(f){f(mk(c))})}})})}
+  function poll(){if(timer)return;timer=setInterval(function(){if(!document.hidden)refresh().catch(function(){})},15000);document.addEventListener('visibilitychange',function(){if(!document.hidden)refresh().catch(function(){})})}
+  function askPin(){return new Promise(function(res){var d=document.getElementById('pinDlg'),f=document.getElementById('pinForm'),i=document.getElementById('pinIn'),e=document.getElementById('pinErr'),c=document.getElementById('pinCancel');
+    d.hidden=false;i.value='';e.hidden=true;setTimeout(function(){i.focus()},30);
+    function done(v){d.hidden=true;f.onsubmit=null;c.onclick=null;res(v)}
+    c.onclick=function(){done(null)};
+    f.onsubmit=function(ev){ev.preventDefault();var p=i.value.trim();if(!p){e.textContent='Masukkan PIN.';e.hidden=false;return}
+      run('checkPin',p).then(function(ok){if(ok){LS.set('dh-pin',p);done(p)}else{e.textContent='PIN salah. Cuba lagi.';e.hidden=false;i.select()}}).catch(function(){e.textContent='Tidak dapat semak PIN. Cuba lagi.';e.hidden=false})}})}
+  function pin(){var p=LS.get('dh-pin');if(p)return Promise.resolve(p);return askPin().then(function(v){if(!v)throw{code:'cancelled'};return v})}
+  function write(fn){var a=[].slice.call(arguments,1);return pin().then(function(p){return run.apply(null,[fn].concat(a,[p])).then(function(r){refresh().catch(function(){});return r},function(e){var m=String(e&&e.message||e);if(m.indexOf('BAD_PIN')>=0){LS.del('dh-pin');throw{code:'bad_pin'}}throw{code:'unavailable',message:m}})})}
+  function coll(c){return{
+    onSnapshot:function(f,err){subs[c].push(f);if(last[c]!==undefined)setTimeout(function(){f(mk(c))},0);if(!first)first=refresh();first.catch(function(e){err&&err(e)});poll();return function(){}},
+    add:function(d){return write('addRow',c,d).then(function(id){return{id:id}})},
+    get:function(){return refresh().then(function(){return mk(c)})},
+    doc:function(id){return{update:function(p){return write('updateRow',c,id,p)},delete:function(){return write('deleteRow',c,id)}}}}}
+  var me=LS.get('dh-name')||'Owner';
+  var user={id:function(){return Promise.resolve(me)},isOwner:function(){return Promise.resolve(true)},canEdit:function(){return Promise.resolve(true)},can:function(){return Promise.resolve(true)},
+    profiles:function(ids){var o={};ids.forEach(function(i){o[i]={name:i}});return Promise.resolve(o)}};
+  window.claude={use:function(n){return Promise.resolve(n==='db'?{collection:coll}:n==='user'?user:null)}};
+})();
+</script>
+<script>
+(function(){
+  const BULAN=["Januari","Februari","Mac","April","Mei","Jun","Julai","Ogos","September","Oktober","November","Disember"];
+  const LOW=5;
+  const $=id=>document.getElementById(id);
+  const money=n=>"RM "+Number(n||0).toLocaleString("ms-MY",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const n2=n=>Number(n||0).toFixed(2);
+  const parseAmt=s=>{const v=parseFloat(String(s).replace(/[^0-9.\-]/g,""));return isFinite(v)?Math.round(v*100)/100:NaN};
+  const parseInt0=s=>{const v=parseInt(String(s).replace(/[^0-9\-]/g,""),10);return isFinite(v)?v:NaN};
+  const pad=n=>String(n).padStart(2,"0");
+  const todayStr=()=>{const t=new Date();return t.getFullYear()+"-"+pad(t.getMonth()+1)+"-"+pad(t.getDate())};
+
+  const now=new Date();
+  let cur={y:now.getFullYear(),m:now.getMonth()+1};
+  const key=()=>cur.y+"-"+pad(cur.m);
+
+  let books=[],orders=[],stockIn=[];
+  let db=null,myId=null,userApi=null,canWrite=true,names={};
+
+  function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+  function toast(msg){let t=document.getElementById("toast");if(!t){t=document.createElement("div");t.id="toast";t.setAttribute("role","status");document.body.appendChild(t)}t.textContent=msg;t.className="show";clearTimeout(t._t);t._t=setTimeout(()=>t.className="",5000)}
+  function flash(id,msg){const p=$(id);p.textContent=msg;p.hidden=false;clearTimeout(p._t);p._t=setTimeout(()=>p.hidden=true,4500)}
+  const fmtDate=d=>{const p=(d||"").split("-");return p.length===3?p[2]+"/"+p[1]:""};
+  const who=id=>!id?"":id===myId?"Anda":(names[id]||"");
+  function errMsg(e){if(e&&e.code==="invalid_argument"){canWrite=false;document.body.classList.add("ro");$("sync").textContent="Disegerak · anda hanya boleh lihat";setTimeout(render,0);toast("Akaun ini hanya boleh lihat. Perubahan tidak disimpan.");}if(e&&e.code==="invalid_argument")return"Anda tiada akses untuk kemas kini. Minta pemilik beri akses Contributor.";if(e&&e.code==="bad_pin")return"PIN salah. Perubahan tidak disimpan.";if(e&&e.code==="cancelled")return"Dibatalkan. Perubahan tidak disimpan.";if(e&&e.code==="quota_exceeded")return"Storan penuh. Padam rekod lama dahulu.";return"Gagal simpan. Cuba lagi."}
+
+  function computeStock(){
+    const m={};
+    for(const b of books)m[b.id]={sold:0,inQty:0,soldM:0,revM:0};
+    for(const o of orders){const s=m[o.kitabId];if(!s)continue;s.sold+=o.qty;if((o.date||"").startsWith(key())){s.soldM+=o.qty;s.revM+=o.qty*o.price}}
+    for(const k of stockIn){const s=m[k.kitabId];if(s)s.inQty+=k.qty}
+    return m;
+  }
+  function statusOf(stock){return stock<=0?["Isi stok","out"]:stock<=LOW?["Stok rendah","low"]:["OK","ok"]}
+
+  function fillSelects(){
+    for(const id of["oBook","kBook"]){
+      const s=$(id),prev=s.value;s.textContent="";
+      if(!books.length){s.appendChild(el("option","", "Tiada kitab lagi"));continue}
+      for(const b of books){const o=el("option","",b.name);o.value=b.id;s.appendChild(o)}
+      if(books.some(b=>b.id===prev))s.value=prev;
+    }
+    if(!$("oPrice")._touched){const b=books.find(x=>x.id===$("oBook").value);$("oPrice").value=b?n2(b.price):""}
+  }
+
+  function render(){
+    $("monthLabel").textContent=BULAN[cur.m-1]+" "+cur.y;
+    const st=computeStock();
+    const mOrders=orders.filter(o=>(o.date||"").startsWith(key())).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.created||0)-(a.created||0));
+
+    // summary
+    let rev=0,units=0,shop=0,off=0;const ordKeys=new Set();
+    for(const o of mOrders){rev+=o.qty*o.price;units+=o.qty;ordKeys.add(o.orderNo?o.date+"|"+o.orderNo:o.id);}
+    const chanCount={};for(const o of mOrders){const k=(o.orderNo?o.date+"|"+o.orderNo:o.id);chanCount[k]=o.channel}
+    for(const k in chanCount){chanCount[k]==="Shopee"?shop++:off++}
+    let totalStock=0,low=0;
+    for(const b of books){const s=st[b.id];const cs=(b.stokAwal||0)+s.inQty-s.sold;totalStock+=cs;if(cs<=LOW)low++}
+    $("sRev").textContent=money(rev);
+    $("sUnits").textContent=units;
+    $("sOrders").textContent=ordKeys.size;
+    $("sChan").textContent="Shopee "+shop+" · Offline "+off;
+    $("sStock").textContent=totalStock;
+    const sl=$("sLow");sl.textContent=low?low+" kitab stok rendah/habis":"unit, semua stok OK";sl.className="sub"+(low?" warn":"");
+
+    // orders table
+    const ob=$("orderRows");ob.textContent="";
+    if(!mOrders.length){const tr=el("tr");const td=el("td","empty","Belum ada order untuk bulan ini.");td.colSpan=9;tr.appendChild(td);ob.appendChild(tr)}
+    for(const o of mOrders){
+      const tr=el("tr");
+      tr.append(el("td","date",fmtDate(o.date)),el("td","",o.channel||""),el("td","",o.kitabName||""),el("td","n",o.qty),el("td","n",n2(o.price)),el("td","n",n2(o.qty*o.price)),el("td","muted",o.orderNo||""),el("td","muted",who(o.by)));
+      const td=el("td");td.appendChild(delBtn(()=>db.collection("order").doc(o.id).delete(),"oErr"));tr.appendChild(td);
+      ob.appendChild(tr);
+    }
+    const of=$("orderFoot");of.textContent="";
+    if(mOrders.length){const tr=el("tr");const a=el("td","","Jumlah");a.colSpan=3;tr.append(a,el("td","n",units),el("td"),el("td","n",n2(rev)));const r=el("td");r.colSpan=3;tr.appendChild(r);of.appendChild(tr)}
+
+    // books table
+    const bb=$("bookRows");bb.textContent="";
+    let tA=0,tI=0,tS=0,tC=0,tM=0;
+    if(!books.length){const tr=el("tr");const td=el("td","empty","Belum ada kitab. Tambah kitab di bahagian bawah.");td.colSpan=9;tr.appendChild(td);bb.appendChild(tr)}
+    const curStock=b=>{const s=st[b.id];return (b.stokAwal||0)+s.inQty-s.sold};
+    let rk=0;
+    for(const b of books.slice().sort((x,y)=>curStock(y)-curStock(x)||x.name.localeCompare(y.name))){
+      const s=st[b.id];const cs=(b.stokAwal||0)+s.inQty-s.sold;const [stx,scl]=statusOf(cs);
+      tA+=b.stokAwal||0;tI+=s.inQty;tS+=s.sold;tC+=cs;tM+=s.revM;
+      const tr=el("tr");rk++;
+      tr.appendChild(el("td","n rk",rk));
+      tr.appendChild(el("td","",b.name));
+      tr.appendChild(editCell(b,"price",n2(b.price),true));
+      tr.appendChild(editCell(b,"stokAwal",b.stokAwal||0,false));
+      tr.append(el("td","n",s.inQty),el("td","n",s.sold),el("td","n"+(cs<0?" neg":""),cs),el("td","n",s.soldM?s.soldM+" · "+n2(s.revM):"—"));
+      const t=el("td");t.appendChild(el("span","chip "+scl,stx));tr.appendChild(t);
+      bb.appendChild(tr);
+    }
+    const bf=$("bookFoot");bf.textContent="";
+    if(books.length){const tr=el("tr");tr.append(el("td"),el("td","","Jumlah"),el("td"),el("td","n",tA),el("td","n",tI),el("td","n",tS),el("td","n",tC),el("td","n",n2(tM)),el("td"));bf.appendChild(tr)}
+
+    // stock-in table (this month)
+    const mStock=stockIn.filter(k=>(k.date||"").startsWith(key())).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    const sb=$("stockRows");sb.textContent="";
+    if(!mStock.length){const tr=el("tr");const td=el("td","empty","Tiada stok masuk bulan ini.");td.colSpan=6;tr.appendChild(td);sb.appendChild(tr)}
+    for(const k of mStock){
+      const b=books.find(x=>x.id===k.kitabId);
+      const tr=el("tr");
+      tr.append(el("td","date",fmtDate(k.date)),el("td","",b?b.name:(k.kitabName||"")),el("td","n",k.qty),el("td","muted",k.note||""),el("td","muted",who(k.by)));
+      const td=el("td");td.appendChild(delBtn(()=>db.collection("stokmasuk").doc(k.id).delete(),"kErr"));tr.appendChild(td);
+      sb.appendChild(tr);
+    }
+    renderRank();
+    renderReport();
+    resolveNames();
+  }
+
+  function editCell(b,field,val,isMoney){
+    const td=el("td","n");
+    if(!canWrite||!db){td.textContent=val;return td}
+    const inp=el("input","cell-in");inp.value=val;inp.inputMode=isMoney?"decimal":"numeric";
+    inp.setAttribute("aria-label",(field==="price"?"Harga ":"Stok awal ")+b.name);
+    const commit=async()=>{
+      const v=isMoney?parseAmt(inp.value):parseInt0(inp.value);
+      if(isNaN(v)||v<0){inp.value=val;return}
+      if(v===(b[field]||0))return;
+      try{await db.collection("kitab").doc(b.id).update({[field]:v})}catch(e){inp.value=val;flash("bErr",errMsg(e))}
+    };
+    inp.addEventListener("blur",commit);
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter")inp.blur()});
+    td.appendChild(inp);return td;
+  }
+  function delBtn(fn,errId){
+    const btn=el("button","del","✕");btn.setAttribute("aria-label","Padam");
+    btn.addEventListener("click",()=>{
+      if(btn.dataset.armed){fn().catch(e=>flash(errId,errMsg(e)))}
+      else{btn.dataset.armed="1";btn.textContent="Padam?";btn.style.color="var(--neg)";
+        setTimeout(()=>{delete btn.dataset.armed;btn.textContent="✕";btn.style.color=""},3000)}
+    });
+    return btn;
+  }
+  let nameReq="";
+  async function resolveNames(){
+    if(!userApi)return;
+    const ids=[...new Set([...orders,...stockIn].map(x=>x.by).filter(id=>id&&id!==myId&&!(id in names)))];
+    const k=ids.join(",");if(!ids.length||k===nameReq)return;nameReq=k;
+    try{const ps=await userApi.profiles(ids);let ch=false;for(const id of ids){const n=(ps&&ps[id]&&ps[id].name)||"Ahli lain";if(names[id]!==n){names[id]=n;ch=true}}if(ch)render()}catch(e){}
+  }
+
+  function setDates(){
+    const t=new Date();const d=(t.getFullYear()===cur.y&&t.getMonth()+1===cur.m)?todayStr():(key()+"-01");
+    $("oDate").value=d;$("kDate").value=d;
+  }
+
+  // tabs
+  function showTab(which){
+    const o=which==="order";
+    for(const [t,p,w] of [["tabOrder","pOrder","order"],["tabBook","pBook","book"],["tabRank","pRank","rank"],["tabReport","pReport","report"]]){$(t).setAttribute("aria-selected",which===w);$(p).hidden=which!==w}
+    try{localStorage.setItem("kitab-tab",which)}catch(e){}
+  }
+  $("tabOrder").onclick=()=>showTab("order");
+  $("tabBook").onclick=()=>showTab("book");
+  $("tabRank").onclick=()=>showTab("rank");
+  $("tabReport").onclick=()=>showTab("report");
+  function li(parent,html){const l=document.createElement("li");l.innerHTML=html;parent.appendChild(l)}
+  const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  function renderReport(){
+    const k=key(),end=k+"-31",pm=cur.m===1?(cur.y-1)+"-12":cur.y+"-"+pad(cur.m-1);
+    const mName=BULAN[cur.m-1]+" "+cur.y,pmName=BULAN[(cur.m+10)%12];
+    $("repTitle").textContent="Report "+mName;
+    const S={};for(const b of books)S[b.id]={b,u:0,r:0,pu:0,sold:0,inn:0,innM:0};
+    let rev=0,units=0,prevRev=0,shop=0,off=0;const ords=new Set();
+    for(const o of orders){const d=o.date||"";const s=S[o.kitabId];
+      if(s&&d<=end)s.sold+=o.qty;
+      if(d.startsWith(k)){rev+=o.qty*o.price;units+=o.qty;ords.add(o.orderNo?d+"|"+o.orderNo:o.id);(o.channel==="Offline"?off+=o.qty:shop+=o.qty);if(s){s.u+=o.qty;s.r+=o.qty*o.price}}
+      else if(d.startsWith(pm)){prevRev+=o.qty*o.price;if(s)s.pu+=o.qty}}
+    for(const x of stockIn){const d=x.date||"";const s=S[x.kitabId];if(!s)continue;if(d<=end)s.inn+=x.qty;if(d.startsWith(k))s.innM+=x.qty}
+    const all=Object.values(S).map(s=>({...s,stock:(s.b.stokAwal||0)+s.inn-s.sold}));
+    // lead
+    let lead="Tiada jualan direkodkan untuk "+mName+".";
+    if(units){lead="Bulan "+mName+": "+units+" kitab terjual melalui "+ords.size+" order, hasil <b>"+money(rev)+"</b>.";
+      if(prevRev){const ch=Math.round((rev-prevRev)/prevRev*100);lead+=" "+(ch>=0?"Naik ":"Turun ")+Math.abs(ch)+"% berbanding "+pmName+" ("+money(prevRev)+")."}
+      lead+=" Shopee "+shop+" unit, Offline "+off+" unit."}
+    $("repLead").innerHTML=lead;
+    // top
+    const top=all.filter(s=>s.u).sort((a,b)=>b.u-a.u||b.r-a.r).slice(0,5);
+    const tEl=$("repTop");tEl.textContent="";
+    if(!top.length)li(tEl,'<span class="muted">Belum ada jualan.</span>');
+    for(const s of top)li(tEl,"<b>"+esc(s.b.name)+"</b> <span class='rep-num'>"+s.u+" unit · "+money(s.r)+"</span>");
+    // out / low
+    const out=all.filter(s=>s.stock<=0).sort((a,b)=>b.u-a.u),low=all.filter(s=>s.stock>0&&s.stock<=LOW).sort((a,b)=>a.stock-b.stock);
+    const oEl=$("repOut");oEl.textContent="";
+    for(const s of out)li(oEl,"<span class='chip out'>Habis</span> "+esc(s.b.name)+(s.u?" <span class='rep-num'>("+s.u+" terjual bulan ini)</span>":""));
+    for(const s of low)li(oEl,"<span class='chip low'>Baki "+s.stock+"</span> "+esc(s.b.name));
+    if(!out.length&&!low.length)li(oEl,'<span class="muted">Semua kitab ada stok mencukupi.</span>');
+    // restock
+    const rin=all.filter(s=>s.innM).sort((a,b)=>b.innM-a.innM);
+    const iEl=$("repIn");iEl.textContent="";
+    for(const s of rin)li(iEl,"<b>"+esc(s.b.name)+"</b> <span class='rep-num'>+"+s.innM+" unit → baki "+s.stock+"</span>");
+    if(!rin.length)li(iEl,'<span class="muted">Tiada stok masuk bulan ini.</span>');
+    // suggestions
+    const sg=[];
+    for(const s of top.slice(0,3)){if(s.stock<=0)sg.push("<b>Isi stok "+esc(s.b.name)+" segera.</b> Ia antara paling laris ("+s.u+" unit) tetapi stok sudah habis.");
+      else if(s.stock<s.u*2)sg.push("<b>Tambah stok "+esc(s.b.name)+".</b> Baki "+s.stock+" unit, cukup lebih kurang "+Math.max(1,Math.round(s.stock/s.u*4))+" minggu ikut kadar jualan bulan ini.")}
+    const topIds=new Set(top.slice(0,3).map(s=>s.b.id));const soldOut=out.filter(s=>s.u&&!topIds.has(s.b.id));
+    if(soldOut.length)sg.push("<b>Isi semula stok:</b> "+soldOut.map(s=>esc(s.b.name)+" ("+s.u+" terjual bulan ini)").join(", ")+". Kitab ini ada permintaan tetapi stok sudah habis.");
+    const demandOut=out.filter(s=>!s.u&&s.pu);for(const s of demandOut.slice(0,2))sg.push("<b>"+esc(s.b.name)+"</b> terjual "+s.pu+" unit bulan lepas tetapi kini habis. Isi semula supaya tak terlepas jualan.");
+    const slow=all.filter(s=>!s.u&&s.stock>=50).sort((a,b)=>b.stock-a.stock).slice(0,3);
+    if(slow.length&&units)sg.push("<b>Promosikan stok yang tak bergerak:</b> "+slow.map(s=>esc(s.b.name)+" ("+s.stock+" unit)").join(", ")+". Cuba bundle dengan kitab laris atau beri diskaun kecil.");
+    const dropped=all.filter(s=>s.pu>=2&&s.u<s.pu/2).slice(0,2);for(const s of dropped)sg.push("Jualan <b>"+esc(s.b.name)+"</b> turun dari "+s.pu+" ke "+s.u+" unit. Semak harga, gambar atau penerangan listing Shopee.");
+    if(units&&off===0)sg.push("Semua jualan bulan ini dari Shopee. Pertimbangkan jualan Offline (kuliah, kelas, masjid) untuk kitab yang stoknya banyak.");
+    if(units&&prevRev&&rev<prevRev)sg.push("Hasil bulan ini lebih rendah dari bulan lepas. Pertimbangkan kempen Shopee (voucher, flash sale) pada hujung bulan.");
+    const dead=out.filter(s=>!s.u&&!s.pu);if(dead.length)sg.push("Kitab tanpa stok dan tanpa jualan: "+dead.map(s=>esc(s.b.name)).join(", ")+". Tentukan sama ada mahu restock atau buang dari senarai.");
+    const gEl=$("repSugg");gEl.textContent="";
+    if(!sg.length)li(gEl,units?'<span class="muted">Tiada isu besar bulan ini. Teruskan.</span>':'<span class="muted">Tiada data cukup untuk cadangan.</span>');
+    for(const t of sg.slice(0,6))li(gEl,t);
+  }
+  try{const t=localStorage.getItem("kitab-tab");if(t==="book"||t==="rank"||t==="report")showTab(t)}catch(e){}
+  let rankBy="unit";
+  const setRank=w=>{rankBy=w;$("rkUnit").setAttribute("aria-pressed",w==="unit");$("rkRev").setAttribute("aria-pressed",w==="rev");renderRank()};
+  $("rkUnit").onclick=()=>setRank("unit");$("rkRev").onclick=()=>setRank("rev");
+  function renderRank(){
+    const k=key();const pm=cur.m===1?(cur.y-1)+"-12":cur.y+"-"+pad(cur.m-1);
+    const agg={},prev={};
+    for(const o of orders){const id=o.kitabId||o.kitabName;const d=o.date||"";
+      if(d.startsWith(k)){const a=agg[id]||(agg[id]={id,name:o.kitabName,u:0,r:0});a.u+=o.qty;a.r+=o.qty*o.price}
+      else if(d.startsWith(pm)){prev[id]=(prev[id]||0)+o.qty}}
+    for(const b of books)if(agg[b.id])agg[b.id].name=b.name;
+    const list=Object.values(agg).sort(rankBy==="unit"?(a,b)=>b.u-a.u||b.r-a.r:(a,b)=>b.r-a.r||b.u-a.u);
+    const tot=list.reduce((s,a)=>s+a.r,0);const max=Math.max(1,...list.map(a=>rankBy==="unit"?a.u:a.r));
+    $("rankTitle").textContent="Ranking jualan "+BULAN[cur.m-1]+" "+cur.y;
+    const tb=$("rankRows");tb.textContent="";
+    if(!list.length){const tr=el("tr");const td=el("td","empty","Belum ada jualan untuk bulan ini.");td.colSpan=7;tr.appendChild(td);tb.appendChild(tr)}
+    let rank=0,last=null;
+    list.forEach((a,i)=>{const v=rankBy==="unit"?a.u:a.r;if(v!==last){rank=i+1;last=v}
+      const tr=el("tr",rank<=3?"podium":"");
+      tr.appendChild(el("td","n rk",rank));
+      tr.appendChild(el("td","",a.name||""));
+      const bt=el("td","barcol");const bar=el("div","bar");const f=el("span");f.style.width=Math.max(3,v/max*100)+"%";bar.appendChild(f);bt.appendChild(bar);tr.appendChild(bt);
+      tr.append(el("td","n",a.u),el("td","n",n2(a.r)),el("td","n muted",tot?Math.round(a.r/tot*100)+"%":"—"));
+      const p=prev[a.id]||0;const pd=el("td","n muted",p?String(p):"—");if(p&&a.u>p)pd.appendChild(el("span","up"," ▲"));else if(p&&a.u<p)pd.appendChild(el("span","down"," ▼"));tr.appendChild(pd);
+      tb.appendChild(tr)});
+    const zero=books.filter(b=>!agg[b.id]).map(b=>b.name);
+    $("rankZero").textContent=zero.length&&list.length?"Belum terjual bulan ini: "+zero.join(", ")+".":"";
+  }
+
+  $("prev").onclick=()=>{cur.m--;if(cur.m<1){cur.m=12;cur.y--}setDates();render()};
+  $("next").onclick=()=>{cur.m++;if(cur.m>12){cur.m=1;cur.y++}setDates();render()};
+
+  $("oBook").addEventListener("change",()=>{const b=books.find(x=>x.id===$("oBook").value);$("oPrice").value=b?n2(b.price):"";$("oPrice")._touched=false});
+  $("oPrice").addEventListener("input",()=>{$("oPrice")._touched=true});
+
+  $("orderForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    if(!db){flash("oErr","Log masuk claude.ai untuk simpan order.");return}
+    const b=books.find(x=>x.id===$("oBook").value);
+    const qty=parseInt0($("oQty").value),price=parseAmt($("oPrice").value),date=$("oDate").value;
+    if(!b){flash("oErr","Pilih kitab dahulu.");return}
+    if(isNaN(qty)||qty<=0){flash("oErr","Masukkan kuantiti yang betul.");$("oQty").focus();return}
+    if(isNaN(price)||price<0){flash("oErr","Masukkan harga seunit yang betul, cth. 20.00");$("oPrice").focus();return}
+    if(!date){flash("oErr","Pilih tarikh.");return}
+    try{
+      await db.collection("order").add({date,channel:$("oChan").value,kitabId:b.id,kitabName:b.name,qty,price,orderNo:$("oNo").value.trim(),by:myId||"",created:Date.now()});
+      $("oQty").value="1";$("oPrice")._touched=false;$("oPrice").value=n2(b.price);
+      if(!date.startsWith(key())){const [y,m]=date.split("-").map(Number);cur={y,m};render()}
+    }catch(e){flash("oErr",errMsg(e))}
+  });
+
+  $("stockForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    if(!db){flash("kErr","Log masuk claude.ai untuk simpan.");return}
+    const b=books.find(x=>x.id===$("kBook").value);const qty=parseInt0($("kQty").value),date=$("kDate").value;
+    if(!b){flash("kErr","Pilih kitab dahulu.");return}
+    if(isNaN(qty)||qty<=0){flash("kErr","Masukkan kuantiti stok masuk.");$("kQty").focus();return}
+    if(!date){flash("kErr","Pilih tarikh.");return}
+    try{
+      await db.collection("stokmasuk").add({date,kitabId:b.id,kitabName:b.name,qty,note:$("kNote").value.trim(),by:myId||"",created:Date.now()});
+      $("kQty").value="";$("kNote").value="";
+    }catch(e){flash("kErr",errMsg(e))}
+  });
+
+  $("bookForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    if(!db){flash("bErr","Log masuk claude.ai untuk simpan.");return}
+    const name=$("bName").value.trim(),price=parseAmt($("bPrice").value),sa=$("bStock").value.trim()===""?0:parseInt0($("bStock").value);
+    if(!name){flash("bErr","Isi nama kitab.");return}
+    if(books.some(b=>b.name.toLowerCase()===name.toLowerCase())){flash("bErr","Kitab ini sudah ada dalam senarai.");return}
+    if(isNaN(price)||price<0){flash("bErr","Masukkan harga yang betul.");return}
+    if(isNaN(sa)||sa<0){flash("bErr","Stok awal mesti nombor.");return}
+    const no=books.reduce((m,b)=>Math.max(m,b.no||0),0)+1;
+    try{await db.collection("kitab").add({name,price,stokAwal:sa,no});$("bName").value="";$("bPrice").value="";$("bStock").value=""}
+    catch(e){flash("bErr",errMsg(e))}
+  });
+
+  setDates();fillSelects();render();
+
+  (async()=>{
+    try{
+      if(window.claude&&claude.use){
+        const [d,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+        const uid=user?await user.id():null;
+        if(d){db=d;myId=uid;userApi=user;
+          if(user){let owner=false,edit=false,c=null;
+            try{owner=!!(await user.isOwner())}catch(e){}
+            try{edit=!!(await user.canEdit())}catch(e){}
+            try{c=await user.can("data.write")}catch(e){}
+            canWrite=owner||c===true||(c==null&&edit);}
+          else canWrite=false;
+        }
+      }
+    }catch(e){}
+    if(!db){
+      $("sync").textContent="Tidak disegerak";$("sync").className="sync off";
+      document.body.classList.add("ro");
+      const n=document.createElement("div");n.className="card signin";
+      n.innerHTML='<h2>Log masuk untuk lihat data jualan</h2><p class="hint" style="margin:0">Data jualan dan stok hanya dipaparkan kepada pengguna yang log masuk akaun Claude. Buka <b>claude.ai</b>, log masuk (akaun percuma pun boleh), kemudian buka semula link ini.</p>';
+      document.querySelector(".summary").before(n);
+      return;
+    }
+    $("sync").textContent=canWrite?"Disegerak dengan Google Sheet":"Disegerak · anda hanya boleh lihat";$("sync").className="sync on";
+    if(!canWrite)document.body.classList.add("ro");
+    render();
+    const err=()=>{$("status").textContent="Data tidak dapat dimuatkan sekarang. Cuba muat semula halaman."};
+    db.collection("kitab").onSnapshot(q=>{books=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.no||999)-(b.no||999)||a.name.localeCompare(b.name));fillSelects();render()},err);
+    db.collection("order").onSnapshot(q=>{orders=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
+    db.collection("stokmasuk").onSnapshot(q=>{stockIn=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
+  })();
+})();
+</script>
+
+</body>
+</html>
